@@ -4,7 +4,8 @@ All results from this one machine. Sections run from the current setup back to t
 and limits for the tuning work are in [measurements/](measurements/).
 
 - [How things were measured](#how-things-were-measured)
-- [Current setup: Qwen3.8-27B on four cards](#current-setup-qwen38-27b-on-four-cards)
+- [Current setup: two cards (November 2026)](#current-setup-two-cards-november-2026)
+- [Four cards: Qwen3.8-27B (October 2026)](#four-cards-qwen38-27b-october-2026)
 - [How the current settings were found (three cards)](#how-the-current-settings-were-found-three-cards)
 - [Two models side by side (2+2 split)](#two-models-side-by-side-22-split)
 - [Earlier setup: Qwen3.6-35B-A3B on the 29-patch build](#earlier-setup-qwen36-35b-a3b-on-the-29-patch-build)
@@ -26,7 +27,52 @@ and limits for the tuning work are in [measurements/](measurements/).
 - Power figures are GPU board power from `nvidia-smi` plus CPU package power (RAPL). The rest of the machine is not
   measured; draw at the wall is higher.
 
-## Current setup: Qwen3.8-27B on four cards
+## Current setup: two cards (November 2026)
+
+In November two of the four P100s moved to another machine, and a Tesla M10 went in for small helper models. The two
+P100s are now shared between an image server and the language models below, one at a time. On 2026-11-22 both
+models ran the same agent battery on the same two cards, with the newest build of each engine.
+
+| | Inkling 2 Mini | Qwen3.8-27B |
+|---|---|---|
+| File | `Inkling-2-Mini-NVFP4-Q8_0.gguf` (17.6 GB) + DSpark draft model | unsloth `UD-Q6_K_XL` (23.5 GiB), MTP |
+| Engine | Megla's `ink2` ([Scream-P100](https://github.com/Megla123/Scream-P100), branch `inkling2`), build `3564723` | [Kmic-68's P100 fork](https://github.com/Kmic-68/llama.cpp), build `bbad6fcfb` |
+| Context | 524,288 (KV cache int8 past 32k) | 262,144 (KV cache q4_0) |
+| **Agent battery** | **27 of 27 (100%)** | **26 of 27 (96%)** |
+| **Mean wall per task** | **83 s** | **129 s** |
+
+| Task | Inkling 2 Mini | Qwen3.8-27B |
+|---|---:|---:|
+| err_python_env | 3 of 3, 56 s | 3 of 3, 79 s |
+| err_replay_patch | 3 of 3, 24 s | 3 of 3, 73 s |
+| err_ambiguous_edit | 3 of 3, 24 s | 3 of 3, 84 s |
+| err_case_search | 3 of 3, 23 s | 3 of 3, 109 s |
+| err_hidden_search | 3 of 3, 29 s | 3 of 3, 75 s |
+| err_big_output | 3 of 3, 26 s | 3 of 3, 73 s |
+| err_multi_dir | 3 of 3, 26 s | 3 of 3, 78 s |
+| err_inline_script | 3 of 3, 154 s | 3 of 3, 200 s |
+| err_big_file_read | 3 of 3, 384 s | 2 of 3, 391 s |
+| **Total** | **27 of 27, 83 s** | **26 of 27, 129 s** |
+
+- **Inkling 2 Mini is faster on every task** and was the only one to pass all 27. Most of the gap is on the short
+  tasks (about 25 s against 75-110 s). The two long tasks, `err_inline_script` and `err_big_file_read`, are close.
+- **Qwen3.8-27B on two cards against four:** 129 s against 120 s per task, same 26 of 27. Over the battery the server
+  did 352.6 t/s prompt and 52.0 t/s generation with MTP, against 453.9 and 53.9 on four cards. Losing two cards cost
+  about a fifth of the prompt speed and almost none of the generation speed.
+- The Inkling server doesn't report token counts, so there are no prompt or generation speeds for it.
+- Inkling's picture input runs on the CPU and takes about 2.5 minutes per picture on the i7-3930K.
+
+**Settings.** Qwen3.8-27B: built per the fork's `BUILD.md` (`GGML_CUDA_NCCL=OFF`, `GGML_CUDA_FA_QUANTS=all`), run
+with `GGML_CUDA_P2P=1` and `GGML_CUDA_GRAPHS_PRE_VOLTA=3`, `-sm tensor -fa 1 -ctk q4_0 -ctv q4_0 -c 262144 -b 2048
+-ub 2048 -np 1 --spec-type draft-mtp --spec-draft-n-max 4 --spec-draft-p-min 0.2`, vision projector on the CPU.
+Inkling 2 Mini: the engine's 512k profile, with two changes for a 16 GB machine: conversation checkpoints capped at
+2 GB and parked conversations at 4 GB (`INK2_CKPT_MB=2048`, `INK2_PARK_MB=4096`; the defaults reserve up to 24 and
+32 GiB of locked RAM), and the container capped at 12 GB. Both cards are picked by UUID so the M10 is never used.
+
+**Build note.** Inkling's image has to be built on this machine. A copy built on a newer CPU used AVX2, which the
+i7-3930K doesn't have, and crashed with "invalid opcode".
+
+## Four cards: Qwen3.8-27B (October 2026)
 
 Kmic-68 fork, NCCL, tensor split, `UD-Q6_K_XL`, 150 W. Command in [SOFTWARE.md](SOFTWARE.md#production-settings).
 
