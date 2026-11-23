@@ -1,14 +1,29 @@
-# Houston: a 4x Tesla P100 local LLM server
+# Houston: a Tesla P100 local LLM server
 
-`houston` is an old X79 desktop turned into a local LLM inference box with four NVIDIA Tesla P100 16 GB cards
-(64 GB of VRAM). This repo is the build notes and the measured results: what it took to get the cards working,
-what settings it runs, and how fast it is.
+`houston` is an old X79 desktop turned into a local LLM inference box. It was built with four NVIDIA Tesla P100
+16 GB cards (64 GB of VRAM); since November 2026 it runs two, plus a Tesla M10 for small helper models. This repo is
+the build notes and the measured results: what it took to get the cards working, what settings it runs, and how
+fast it is.
+
+## Now: two cards (November 2026)
+
+The two P100s are shared between an image server and a language model, one at a time. Same agent battery, same
+two cards, newest build of each engine, measured 2026-11-22:
+
+| Model | Engine | Agent battery (9 tool-use tasks x 3) | Mean per task |
+|---|---|---|---|
+| **Inkling 2 Mini** (NVFP4-Q8_0, 512k context) | Megla's `ink2`, build `3564723` | **27 of 27** | **83 s** |
+| Qwen3.8-27B (`UD-Q6_K_XL`, 262k context, MTP) | Kmic-68's fork, build `bbad6fcfb` | 26 of 27 | 129 s |
+
+Inkling 2 Mini was faster on every task. Qwen3.8-27B on two cards was close to its four-card result (129 s against
+120 s per task): prompt speed dropped about a fifth, generation hardly at all. Settings and per-task tables:
+[BENCHMARKS.md](BENCHMARKS.md#current-setup-two-cards-november-2026).
 
 ## The box
 
 | | |
 |---|---|
-| GPUs | 4x Tesla P100 PCIe 16 GB (Pascal, HBM2), each at PCIe Gen 3 x8, no NVLink |
+| GPUs | 2x Tesla P100 PCIe 16 GB (Pascal, HBM2), no NVLink; four until November 2026. Plus a Tesla M10 |
 | Board / CPU | ASUS P9X79 PRO, Core i7-3930K (6 cores, 2011) |
 | RAM | 16 GB DDR3-1600 |
 | PSU | Corsair RM1000x |
@@ -18,7 +33,7 @@ what settings it runs, and how fast it is.
 Details: [HARDWARE.md](HARDWARE.md). The board needed a BIOS mod before it would map the cards at all:
 [BIOS-FIX.md](BIOS-FIX.md).
 
-## What it runs
+## What it ran on four cards (October 2026)
 
 Qwen3.8-27B (unsloth `UD-Q6_K_XL`, 23.5 GiB) on [Kmic-68's P100 fork of llama.cpp](https://github.com/Kmic-68/llama.cpp),
 built with NCCL, tensor split across all four cards, 262,144-token context, MTP speculative decoding, 150 W per card,
