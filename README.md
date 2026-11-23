@@ -8,15 +8,17 @@ fast it is.
 ## Now: two cards (November 2026)
 
 The two P100s are shared between an image server and a language model, one at a time. Same agent battery, same
-two cards, newest build of each engine, measured 2026-11-22:
+two cards, newest build of each engine, measured 2026-11-22 and 23:
 
-| Model | Engine | Agent battery (9 tool-use tasks x 3) | Mean per task |
-|---|---|---|---|
-| **Inkling 2 Mini** (NVFP4-Q8_0, 512k context) | Megla's `ink2`, build `3564723` | **27 of 27** | **83 s** |
-| Qwen3.8-27B (`UD-Q6_K_XL`, 262k context, MTP) | Kmic-68's fork, build `bbad6fcfb` | 26 of 27 | 129 s |
+| Model | Engine | Agent battery (9 tool-use tasks x 3) | Mean per task | Prompt / generation |
+|---|---|---|---|---|
+| **Inkling 2 Mini** (NVFP4-Q8_0, 512k context) | Megla's `ink2`, build `d05521d` | **27 of 27** | **57 s** | **474 / 81 t/s** |
+| Inkling 2 Mini, one build earlier | Megla's `ink2`, build `3564723` | 27 of 27 | 83 s | not measured |
+| Qwen3.8-27B (`UD-Q6_K_XL`, 262k context, MTP) | Kmic-68's fork, build `bbad6fcfb` | 26 of 27 | 129 s | 342 / 52 t/s |
 
-Inkling 2 Mini was faster on every task. Qwen3.8-27B on two cards was close to its four-card result (129 s against
-120 s per task): prompt speed dropped about a fifth, generation hardly at all. Settings and per-task tables:
+Inkling 2 Mini was faster on every task, with 39% faster prompt reading and 57% faster generation than Qwen3.8-27B.
+Qwen3.8-27B on two cards was close to its four-card result (129 s against 120 s per task): prompt speed dropped about a
+quarter, generation hardly at all. Settings and per-task tables:
 [BENCHMARKS.md](BENCHMARKS.md#current-setup-two-cards-november-2026).
 
 ## The box

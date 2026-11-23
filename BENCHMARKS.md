@@ -16,6 +16,10 @@ and limits for the tuning work are in [measurements/](measurements/).
 
 - **Speed:** `llama-bench` (pp = prompt processing, tg = generation, in tokens/s) and real `llama-server` requests.
   MTP can only be measured through the server or `llama-speculative-simple`.
+- **Speed during the agent battery:** read from the server itself, from its timings for every response or its
+  counters (new prompt tokens and the time to read them, generated tokens and the time to write them), added up over
+  the battery. Prompt tokens reused from the
+  conversation cache are counted separately and not included in the prompt speed.
 - **Agent battery:** a Hermes agent running nine error-recovery coding tasks (`err_python_env`, `err_replay_patch`,
   `err_ambiguous_edit`, `err_case_search`, `err_hidden_search`, `err_big_output`, `err_multi_dir`,
   `err_inline_script`, `err_big_file_read`) against the server, 3 repetitions each, 600 s limit per task. Pass rate
@@ -31,41 +35,54 @@ and limits for the tuning work are in [measurements/](measurements/).
 
 In November two of the four P100s moved to another machine, and a Tesla M10 went in for small helper models. The two
 P100s are now shared between an image server and the language models below, one at a time. On 2026-11-22 both
-models ran the same agent battery on the same two cards, with the newest build of each engine.
+models ran the same agent battery on the same two cards, with the newest build of each engine; on 2026-11-23 Inkling ran it
+again on Megla's next build.
 
-| | Inkling 2 Mini | Qwen3.8-27B |
-|---|---|---|
-| File | `Inkling-2-Mini-NVFP4-Q8_0.gguf` (17.6 GB) + DSpark draft model | unsloth `UD-Q6_K_XL` (23.5 GiB), MTP |
-| Engine | Megla's `ink2` ([Scream-P100](https://github.com/Megla123/Scream-P100), branch `inkling2`), build `3564723` | [Kmic-68's P100 fork](https://github.com/Kmic-68/llama.cpp), build `bbad6fcfb` |
-| Context | 524,288 (KV cache int8 past 32k) | 262,144 (KV cache q4_0) |
-| **Agent battery** | **27 of 27 (100%)** | **26 of 27 (96%)** |
-| **Mean wall per task** | **83 s** | **129 s** |
+| | Inkling 2 Mini `d05521d` | Inkling 2 Mini `3564723` | Qwen3.8-27B |
+|---|---|---|---|
+| File | `Inkling-2-Mini-NVFP4-Q8_0.gguf` (17.6 GB) + DSpark draft model | same | unsloth `UD-Q6_K_XL` (23.5 GiB), MTP |
+| Engine | Megla's `ink2` ([Scream-P100](https://github.com/Megla123/Scream-P100), branch `inkling2`), build `d05521d` (2026-11-23) | same engine, build `3564723` (2026-11-22) | [Kmic-68's P100 fork](https://github.com/Kmic-68/llama.cpp), build `bbad6fcfb` |
+| Context | 524,288 (KV cache int8 past 32k) | same | 262,144 (KV cache q4_0) |
+| **Agent battery** | **27 of 27 (100%)** | 27 of 27 (100%) | 26 of 27 (96%) |
+| **Mean wall per task** | **57 s** | 83 s | 129 s |
+| **Prompt speed** | **474.4 t/s** | not measured | 341.9 t/s |
+| **Generation speed** | **80.6 t/s** (DSpark draft) | not measured | 51.5 t/s (MTP) |
 
-| Task | Inkling 2 Mini | Qwen3.8-27B |
-|---|---:|---:|
-| err_python_env | 3 of 3, 56 s | 3 of 3, 79 s |
-| err_replay_patch | 3 of 3, 24 s | 3 of 3, 73 s |
-| err_ambiguous_edit | 3 of 3, 24 s | 3 of 3, 84 s |
-| err_case_search | 3 of 3, 23 s | 3 of 3, 109 s |
-| err_hidden_search | 3 of 3, 29 s | 3 of 3, 75 s |
-| err_big_output | 3 of 3, 26 s | 3 of 3, 73 s |
-| err_multi_dir | 3 of 3, 26 s | 3 of 3, 78 s |
-| err_inline_script | 3 of 3, 154 s | 3 of 3, 200 s |
-| err_big_file_read | 3 of 3, 384 s | 2 of 3, 391 s |
-| **Total** | **27 of 27, 83 s** | **26 of 27, 129 s** |
+| Task | Inkling `d05521d` | Inkling `3564723` | Qwen3.8-27B |
+|---|---:|---:|---:|
+| err_python_env | 3 of 3, 46 s | 3 of 3, 56 s | 3 of 3, 79 s |
+| err_replay_patch | 3 of 3, 22 s | 3 of 3, 24 s | 3 of 3, 73 s |
+| err_ambiguous_edit | 3 of 3, 24 s | 3 of 3, 24 s | 3 of 3, 84 s |
+| err_case_search | 3 of 3, 23 s | 3 of 3, 23 s | 3 of 3, 109 s |
+| err_hidden_search | 3 of 3, 31 s | 3 of 3, 29 s | 3 of 3, 75 s |
+| err_big_output | 3 of 3, 23 s | 3 of 3, 26 s | 3 of 3, 73 s |
+| err_multi_dir | 3 of 3, 27 s | 3 of 3, 26 s | 3 of 3, 78 s |
+| err_inline_script | 3 of 3, 24 s | 3 of 3, 154 s | 3 of 3, 200 s |
+| err_big_file_read | 3 of 3, 289 s | 3 of 3, 384 s | 2 of 3, 391 s |
+| **Total** | **27 of 27, 57 s** | **27 of 27, 83 s** | **26 of 27, 129 s** |
 
 - **Inkling 2 Mini is faster on every task** and was the only one to pass all 27. Most of the gap is on the short
-  tasks (about 25 s against 75-110 s). The two long tasks, `err_inline_script` and `err_big_file_read`, are close.
+  tasks (about 25 s against 75-110 s).
+- **`d05521d` against `3564723`:** Megla's update reads short prompt pieces 18-22% faster (a 128-token piece 409 → 336 ms
+  in his numbers), which is most of what an agent does between tool calls. The longest task, `err_big_file_read`, went from
+  384 to 289 s. Part of the 83 → 57 s difference is noise: `3564723`'s `err_inline_script` average includes one 418 s run;
+  without that task the two builds are 74 against 61 s per task (18% faster).
 - **Qwen3.8-27B on two cards against four:** 129 s against 120 s per task, same 26 of 27. Over the battery the server
-  did 352.6 t/s prompt and 52.0 t/s generation with MTP, against 453.9 and 53.9 on four cards. Losing two cards cost
-  about a fifth of the prompt speed and almost none of the generation speed.
-- The Inkling server doesn't report token counts, so there are no prompt or generation speeds for it.
+  did 341.9 t/s prompt and 51.5 t/s generation with MTP, against 453.9 and 53.9 on four cards. Losing two cards cost
+  about a quarter of the prompt speed and almost none of the generation speed.
+- **Inkling `d05521d` speed:** 474.4 t/s prompt and 80.6 t/s generation over the battery, 39% and 57% faster than
+  Qwen3.8-27B on the same cards. Long reads went faster still: a median of 666 t/s on prompts with 2,000 or more new
+  tokens, and 86.1 t/s on answers of 100 tokens or more. 80% of the prompt tokens came from the conversation cache, the
+  DSpark draft model's guesses were accepted 76% of the time, and the median time to the first token was 1.05 s.
+- **Qwen3.8-27B speed, measured the same way:** 341.9 t/s prompt and 51.5 t/s generation; a median of 410 t/s on
+  prompts with 2,000 or more new tokens and 53.8 t/s on answers of 100 tokens or more. 57% of the prompt tokens came
+  from the conversation cache, 59% of the MTP drafts were accepted, and the median time to the first token was 1.83 s.
 - Inkling's picture input runs on the CPU and takes about 2.5 minutes per picture on the i7-3930K.
 
 **Settings.** Qwen3.8-27B: built per the fork's `BUILD.md` (`GGML_CUDA_NCCL=OFF`, `GGML_CUDA_FA_QUANTS=all`), run
 with `GGML_CUDA_P2P=1` and `GGML_CUDA_GRAPHS_PRE_VOLTA=3`, `-sm tensor -fa 1 -ctk q4_0 -ctv q4_0 -c 262144 -b 2048
 -ub 2048 -np 1 --spec-type draft-mtp --spec-draft-n-max 4 --spec-draft-p-min 0.2`, vision projector on the CPU.
-Inkling 2 Mini: the engine's 512k profile, with two changes for a 16 GB machine: conversation checkpoints capped at
+Inkling 2 Mini (both builds): the engine's 512k profile, with two changes for a 16 GB machine: conversation checkpoints capped at
 2 GB and parked conversations at 4 GB (`INK2_CKPT_MB=2048`, `INK2_PARK_MB=4096`; the defaults reserve up to 24 and
 32 GiB of locked RAM), and the container capped at 12 GB. Both cards are picked by UUID so the M10 is never used.
 
