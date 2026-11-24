@@ -13,7 +13,6 @@ two cards, newest build of each engine, measured 2026-11-22 and 23:
 | Model | Engine | Agent battery (9 tool-use tasks x 3) | Mean per task | Prompt / generation |
 |---|---|---|---|---|
 | **Inkling 2 Mini** (NVFP4-Q8_0, 512k context) | Megla's `ink2`, build `d05521d` | **27 of 27** | **57 s** | **474 / 81 t/s** |
-| Inkling 2 Mini, one build earlier | Megla's `ink2`, build `3564723` | 27 of 27 | 83 s | not measured |
 | Qwen3.8-27B (`UD-Q6_K_XL`, 262k context, MTP) | Kmic-68's fork, build `bbad6fcfb` | 26 of 27 | 129 s | 342 / 52 t/s |
 
 Inkling 2 Mini was faster on every task, with 39% faster prompt reading and 57% faster generation than Qwen3.8-27B.
