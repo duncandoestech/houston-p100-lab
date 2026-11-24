@@ -71,7 +71,7 @@ again on Megla's next build.
   did 341.9 t/s prompt and 51.5 t/s generation with MTP, against 453.9 and 53.9 on four cards. Losing two cards cost
   about a quarter of the prompt speed and almost none of the generation speed.
 - **Inkling `d05521d` speed:** 474.4 t/s prompt and 80.6 t/s generation over the battery, 39% and 57% faster than
-  Qwen3.8-27B on the same cards. Long reads went faster still: a median of 666 t/s on prompts with 2,000 or more new
+  Qwen3.8-27B on the same cards. Long reads went faster still: a median of 665 t/s on prompts with 2,000 or more new
   tokens, and 86.1 t/s on answers of 100 tokens or more. 80% of the prompt tokens came from the conversation cache, the
   DSpark draft model's guesses were accepted 76% of the time, and the median time to the first token was 1.05 s.
 - **Qwen3.8-27B speed, measured the same way:** 341.9 t/s prompt and 51.5 t/s generation; a median of 410 t/s on
